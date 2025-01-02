@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: fp-db-ecommerce
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: fp-db-ecommerce
+      PGDATA: /data/postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - live
+  backend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: fp-db-backend
+    volumes:
+      - ./app:/app/
+    ports:
+      - "8000:8000"
+    networks:
+      - live
+    restart: on-failure
+#    command: sh -c 'alembic revision --autogenerate -m "your message here" && alembic upgrade head'
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@fp-db-ecommerce:5432/fp-db-ecommerce
+      - SECRET_KEY=HereIsTheSecretKey
+      - DEBUG=True
+    env_file:
+      - ".env"
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fp-db-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: youremail@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: your_password
+      PGADMIN_LISTEN_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - live
+  redis:
+    image: redis:7.0.11-alpine
+    container_name: fp-db-redis
+    networks:
+      - live
+volumes:
+  postgres_data:
+networks:
+  live:
